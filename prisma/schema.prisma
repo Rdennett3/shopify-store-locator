@@ -1,0 +1,66 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:dev.sqlite"
+}
+
+model Session {
+  id                  String    @id
+  shop                String
+  state               String
+  isOnline            Boolean   @default(false)
+  scope               String?
+  expires             DateTime?
+  accessToken         String
+  userId              BigInt?
+  firstName           String?
+  lastName            String?
+  email               String?
+  accountOwner        Boolean   @default(false)
+  locale              String?
+  collaborator        Boolean?  @default(false)
+  emailVerified       Boolean?  @default(false)
+  refreshToken        String?
+  refreshTokenExpires DateTime?
+}
+
+model StoreSettings {
+  id               String   @id @default(cuid())
+  shop             String   @unique
+  mapboxToken      String?
+  defaultLatitude  Float?
+  defaultLongitude Float?
+  defaultZoom      Float    @default(8)
+  searchRadius     Int      @default(50)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model Location {
+  id          String   @id @default(cuid())
+  shop        String
+  name        String
+  address1    String
+  address2    String?
+  city        String
+  state       String
+  postalCode  String
+  country     String   @default("US")
+  latitude    Float
+  longitude   Float
+  phone       String?
+  email       String?
+  website     String?
+  hours       String?
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([shop])
+}
