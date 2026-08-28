@@ -5,9 +5,14 @@ name = "store-locator"
 application_url = "https://example.com"
 embedded = true
 
+[app_proxy]
+url = "/store-locator-proxy"
+prefix = "apps"
+subpath = "store-locator"
+
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "write_products,write_metaobjects,write_metaobject_definitions"
+scopes = "write_products,write_metaobjects,write_metaobject_definitions,write_app_proxy"
 
 [product.metafields.app.demo_info]
 type = "single_line_text_field"

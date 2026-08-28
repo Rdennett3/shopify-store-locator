@@ -61,6 +61,9 @@ export default function LocationsPage() {
                                         <s-paragraph>
                                             {location.enabled ? "Active" : "Disabled"}
                                         </s-paragraph>
+                                        <s-button href={`/app/locations/${location.id}`}>
+                                            Edit
+                                        </s-button>
                                     </s-stack>
                                 </s-box>
                             ))}

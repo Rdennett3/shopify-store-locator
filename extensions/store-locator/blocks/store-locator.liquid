@@ -1,0 +1,63 @@
+{{ 'store-locator.css' | asset_url | stylesheet_tag }}
+
+<script
+  src="{{ 'store-locator.js' | asset_url }}"
+  defer
+></script>
+
+<div
+  class="store-locator"
+  data-store-locator
+  {{ block.shopify_attributes }}
+>
+  <div class="store-locator__inner">
+    {% if block.settings.heading != blank %}
+      <h2 class="store-locator__heading">
+        {{ block.settings.heading }}
+      </h2>
+    {% endif %}
+
+    <div class="store-locator__layout">
+      <div class="store-locator__sidebar">
+        <div class="store-locator__search">
+          <input
+            class="store-locator__search-input"
+            type="search"
+            placeholder="Enter ZIP code or address"
+            data-store-locator-search
+            disabled
+          >
+        </div>
+
+        <div
+          class="store-locator__results"
+          data-store-locator-results
+        >
+          <div class="store-locator__loading">Loading store locations...</div>
+        </div>
+      </div>
+
+      <div class="store-locator__map-wrapper">
+        <div
+          class="store-locator__map"
+          data-store-locator-map
+        ></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Store Locator",
+  "target": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Find a Store"
+    }
+  ]
+}
+{% endschema %}
