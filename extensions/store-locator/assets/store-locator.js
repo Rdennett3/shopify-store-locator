@@ -12,6 +12,94 @@ console.log("STORE LOCATOR JS LOADED");
             .replaceAll("'", "&#039;");
     }
 
+    function degreesToRadians(degrees) {
+        return degrees * (Math.PI / 180);
+    }
+
+    function calculateDistanceMiles(
+        latitude1,
+        longitude1,
+        latitude2,
+        longitude2
+    ) {
+        const earthRadiusMiles = 3958.8;
+
+        const lat1 = degreesToRadians(latitude1);
+        const lat2 = degreesToRadians(latitude2);
+
+        const deltaLatitude =
+            degreesToRadians(latitude2 - latitude1);
+
+        const deltaLongitude =
+            degreesToRadians(longitude2 - longitude1);
+
+        const a =
+            Math.sin(deltaLatitude / 2) *
+            Math.sin(deltaLatitude / 2) +
+            Math.cos(lat1) *
+            Math.cos(lat2) *
+            Math.sin(deltaLongitude / 2) *
+            Math.sin(deltaLongitude / 2);
+
+        const c =
+            2 * Math.atan2(
+                Math.sqrt(a),
+                Math.sqrt(1 - a)
+            );
+
+        return earthRadiusMiles * c;
+    }
+
+    async function geocodeSearchQuery(
+        query,
+        mapboxToken
+    ) {
+        const params = new URLSearchParams({
+            q: query,
+            access_token: mapboxToken,
+            country: "US",
+            limit: "1",
+            autocomplete: "false",
+        });
+
+        const response = await fetch(
+            `https://api.mapbox.com/search/geocode/v6/forward?${params.toString()}`
+        );
+
+        if (!response.ok) {
+            throw new Error(
+                `Geocoding request failed: ${response.status}`
+            );
+        }
+
+        const data = await response.json();
+
+        const feature = data.features?.[0];
+
+        if (!feature) {
+            return null;
+        }
+
+        const coordinates =
+            feature.geometry?.coordinates;
+
+        if (
+            !Array.isArray(coordinates) ||
+            coordinates.length < 2
+        ) {
+            return null;
+        }
+
+        return {
+            longitude: Number(coordinates[0]),
+            latitude: Number(coordinates[1]),
+            name:
+                feature.properties?.full_address ||
+                feature.properties?.name ||
+                query,
+        };
+    }
+
     function loadMapbox() {
         return new Promise((resolve, reject) => {
             if (window.mapboxgl) {
@@ -85,7 +173,11 @@ console.log("STORE LOCATOR JS LOADED");
         });
     }
 
-    function renderLocations(container, locations) {
+    function renderLocations(
+        container,
+        locations,
+        options = {}
+    ) {
         const results = container.querySelector(
             "[data-store-locator-results]"
         );
@@ -107,6 +199,14 @@ console.log("STORE LOCATOR JS LOADED");
 
         results.innerHTML = locations
             .map((location) => {
+                const distance =
+                    typeof location.distance === "number"
+                        ? `
+      <p class="store-locator__distance">
+        ${location.distance.toFixed(1)} miles away
+      </p>
+    `
+                        : "";
                 const address2 = location.address2
                     ? `<br>${escapeHtml(location.address2)}`
                     : "";
@@ -162,6 +262,9 @@ console.log("STORE LOCATOR JS LOADED");
               ${escapeHtml(location.state)}
               ${escapeHtml(location.postalCode)}
             </p>
+
+            ${distance}
+
 
             <div class="store-locator__details">
               ${phone}
@@ -235,6 +338,22 @@ console.log("STORE LOCATOR JS LOADED");
 
         const mapElement = container.querySelector(
             "[data-store-locator-map]"
+        );
+
+        const searchForm = container.querySelector(
+            "[data-store-locator-search-form]"
+        );
+
+        const searchInput = container.querySelector(
+            "[data-store-locator-search]"
+        );
+
+        const searchButton = container.querySelector(
+            "[data-store-locator-search-button]"
+        );
+
+        const searchStatus = container.querySelector(
+            "[data-store-locator-search-status]"
         );
 
         console.log("RESULTS ELEMENT:", results);
@@ -477,6 +596,225 @@ console.log("STORE LOCATOR JS LOADED");
                 "MARKERS CREATED:",
                 markers.size
             );
+
+            if (searchInput) {
+                searchInput.disabled = false;
+            }
+
+            if (searchButton) {
+                searchButton.disabled = false;
+            }
+
+            let searchMarker = null;
+
+            if (searchForm && searchInput) {
+                searchForm.addEventListener(
+                    "submit",
+                    async (event) => {
+                        event.preventDefault();
+
+                        const query =
+                            searchInput.value.trim();
+
+                        if (!query) {
+                            if (searchStatus) {
+                                searchStatus.textContent =
+                                    "Enter a ZIP code or address.";
+                            }
+
+                            return;
+                        }
+
+                        searchInput.disabled = true;
+
+                        if (searchButton) {
+                            searchButton.disabled = true;
+                            searchButton.textContent =
+                                "Searching...";
+                        }
+
+                        if (searchStatus) {
+                            searchStatus.textContent =
+                                "Searching for nearby stores...";
+                        }
+
+                        try {
+                            const searchLocation =
+                                await geocodeSearchQuery(
+                                    query,
+                                    config.mapboxToken
+                                );
+
+                            if (!searchLocation) {
+                                if (searchStatus) {
+                                    searchStatus.textContent =
+                                        "We couldn't find that location.";
+                                }
+
+                                return;
+                            }
+
+                            console.log(
+                                "SEARCH LOCATION:",
+                                searchLocation
+                            );
+
+                            const searchRadius =
+                                Number(config.searchRadius) || 50;
+
+                            const locationsWithDistance =
+                                locations
+                                    .map((location) => {
+                                        const latitude =
+                                            Number(location.latitude);
+
+                                        const longitude =
+                                            Number(location.longitude);
+
+                                        if (
+                                            Number.isNaN(latitude) ||
+                                            Number.isNaN(longitude)
+                                        ) {
+                                            return null;
+                                        }
+
+                                        return {
+                                            ...location,
+
+                                            distance:
+                                                calculateDistanceMiles(
+                                                    searchLocation.latitude,
+                                                    searchLocation.longitude,
+                                                    latitude,
+                                                    longitude
+                                                ),
+                                        };
+                                    })
+                                    .filter(Boolean)
+                                    .sort(
+                                        (a, b) =>
+                                            a.distance - b.distance
+                                    );
+
+                            const matchingLocations =
+                                locationsWithDistance.filter(
+                                    (location) =>
+                                        location.distance <=
+                                        searchRadius
+                                );
+
+                            console.log(
+                                "MATCHING LOCATIONS:",
+                                matchingLocations
+                            );
+
+                            if (searchMarker) {
+                                searchMarker.remove();
+                            }
+
+                            searchMarker =
+                                new mapboxgl.Marker({
+                                    color: "#333333",
+                                })
+                                    .setLngLat([
+                                        searchLocation.longitude,
+                                        searchLocation.latitude,
+                                    ])
+                                    .addTo(map);
+
+                            markers.forEach(
+                                (marker, locationId) => {
+                                    const isVisible =
+                                        matchingLocations.some(
+                                            (location) =>
+                                                location.id ===
+                                                locationId
+                                        );
+
+                                    marker.getElement().style.display =
+                                        isVisible ? "" : "none";
+                                }
+                            );
+
+                            if (!matchingLocations.length) {
+                                renderLocations(
+                                    container,
+                                    []
+                                );
+
+                                if (searchStatus) {
+                                    searchStatus.textContent =
+                                        `No stores were found within ${searchRadius} miles.`;
+                                }
+
+                                map.flyTo({
+                                    center: [
+                                        searchLocation.longitude,
+                                        searchLocation.latitude,
+                                    ],
+                                    zoom: 9,
+                                    essential: true,
+                                });
+
+                                return;
+                            }
+
+                            renderLocations(
+                                container,
+                                matchingLocations
+                            );
+
+                            if (searchStatus) {
+                                searchStatus.textContent =
+                                    `${matchingLocations.length} ${matchingLocations.length === 1
+                                        ? "store"
+                                        : "stores"
+                                    } found within ${searchRadius} miles.`;
+                            }
+
+                            const searchBounds =
+                                new mapboxgl.LngLatBounds();
+
+                            searchBounds.extend([
+                                searchLocation.longitude,
+                                searchLocation.latitude,
+                            ]);
+
+                            matchingLocations.forEach(
+                                (location) => {
+                                    searchBounds.extend([
+                                        Number(location.longitude),
+                                        Number(location.latitude),
+                                    ]);
+                                }
+                            );
+
+                            map.fitBounds(searchBounds, {
+                                padding: 70,
+                                maxZoom: 12,
+                            });
+                        } catch (error) {
+                            console.error(
+                                "STORE LOCATOR SEARCH FAILED:",
+                                error
+                            );
+
+                            if (searchStatus) {
+                                searchStatus.textContent =
+                                    "Unable to complete the search. Please try again.";
+                            }
+                        } finally {
+                            searchInput.disabled = false;
+
+                            if (searchButton) {
+                                searchButton.disabled = false;
+                                searchButton.textContent =
+                                    "Search";
+                            }
+                        }
+                    }
+                );
+            }
 
             map.once("load", () => {
                 console.log(

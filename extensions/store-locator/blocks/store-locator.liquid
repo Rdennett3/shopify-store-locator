@@ -19,15 +19,36 @@
 
     <div class="store-locator__layout">
       <div class="store-locator__sidebar">
-        <div class="store-locator__search">
-          <input
-            class="store-locator__search-input"
-            type="search"
-            placeholder="Enter ZIP code or address"
-            data-store-locator-search
-            disabled
-          >
-        </div>
+        <form
+          class="store-locator__search"
+          data-store-locator-search-form
+        >
+          <div class="store-locator__search-row">
+            <input
+              class="store-locator__search-input"
+              type="search"
+              placeholder="Enter ZIP code or address"
+              aria-label="Enter ZIP code or address"
+              data-store-locator-search
+              disabled
+            >
+
+            <button
+              class="store-locator__search-button"
+              type="submit"
+              data-store-locator-search-button
+              disabled
+            >
+              Search
+            </button>
+          </div>
+
+          <div
+            class="store-locator__search-status"
+            data-store-locator-search-status
+            aria-live="polite"
+          ></div>
+        </form>
 
         <div
           class="store-locator__results"
