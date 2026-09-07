@@ -61,6 +61,7 @@
 .store-locator__search-row {
     display: flex;
     align-items: stretch;
+    flex-wrap: wrap;
     gap: 8px;
 }
 
@@ -290,6 +291,24 @@
     cursor: not-allowed;
 }
 
+.store-locator__radius-select {
+    flex: 0 0 auto;
+    min-height: 44px;
+    margin: 0;
+    padding: 10px 36px 10px 12px;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    background: #fff;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+
+.store-locator__radius-select:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 @media screen and (max-width: 749px) {
     .store-locator__layout {
         flex-direction: column;
@@ -326,6 +345,7 @@
 
     .store-locator__search-button,
     .store-locator__location-button,
+    .store-locator__radius-select,
     .store-locator__reset-button {
         width: 100%;
     }

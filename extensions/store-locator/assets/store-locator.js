@@ -781,6 +781,11 @@
                 "[data-store-locator-search]"
             );
 
+        const radiusSelect =
+            container.querySelector(
+                "[data-store-locator-radius]"
+            );
+
         const searchButton =
             container.querySelector(
                 "[data-store-locator-search-button]"
@@ -956,7 +961,7 @@
             const defaultLatitude =
                 Number(
                     config.defaultLatitude
-                ) || 39.8283;
+                ) || -73.3845291;
 
             const defaultLongitude =
                 Number(
@@ -1212,6 +1217,27 @@
             );
 
 
+            if (radiusSelect) {
+                const configuredRadius =
+                    String(
+                        Number(config.searchRadius) || 50
+                    );
+
+                const matchingOption =
+                    Array.from(
+                        radiusSelect.options
+                    ).find(
+                        (option) =>
+                            option.value ===
+                            configuredRadius
+                    );
+
+                if (matchingOption) {
+                    radiusSelect.value =
+                        configuredRadius;
+                }
+            }
+
             /*
              * ----------------------------------------------------
              * Enable search controls
@@ -1231,6 +1257,10 @@
             if (useLocationButton) {
                 useLocationButton.disabled =
                     false;
+            }
+
+            if (radiusSelect) {
+                radiusSelect.disabled = false;
             }
 
 
@@ -1395,13 +1425,23 @@
              */
 
             let searchMarker = null;
+            let activeSearchLocation = null;
+            let activeSearchLabel = null;
 
             function showNearbyLocations(
                 searchLocation,
                 label = "your location"
             ) {
+                activeSearchLocation = searchLocation;
+                activeSearchLabel = label;
                 const searchRadius =
-                    Number(config.searchRadius) || 50;
+                    Number(
+                        radiusSelect?.value
+                    ) ||
+                    Number(
+                        config.searchRadius
+                    ) ||
+                    50;
 
 
                 /*
@@ -2166,6 +2206,28 @@
                 );
             }
 
+            /*
+            * ----------------------------------------------------
+            * Radius Change
+            * ----------------------------------------------------
+            */
+
+            if (radiusSelect) {
+                radiusSelect.addEventListener(
+                    "change",
+                    () => {
+                        if (!activeSearchLocation) {
+                            return;
+                        }
+
+                        showNearbyLocations(
+                            activeSearchLocation,
+                            activeSearchLabel ||
+                            "your location"
+                        );
+                    }
+                );
+            }
 
             /*
              * ----------------------------------------------------
@@ -2216,6 +2278,8 @@
                         resetButton.hidden =
                             true;
 
+                        activeSearchLocation = null;
+                        activeSearchLabel = null;
 
                         /*
                          * Remove search marker.
