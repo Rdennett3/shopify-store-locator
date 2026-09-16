@@ -47,6 +47,15 @@ export async function loader({ request }) {
 
             searchRadius:
                 settings?.searchRadius ?? 50,
+
+            searchRadiusOptions:
+                (
+                    settings?.searchRadiusOptions ||
+                    "25,50,100,250"
+                )
+                    .split(",")
+                    .map((value) => Number(value.trim()))
+                    .filter(Number.isFinite),
         });
     } catch (error) {
         console.error(

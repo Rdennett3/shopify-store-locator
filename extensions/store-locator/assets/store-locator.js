@@ -1218,24 +1218,39 @@
 
 
             if (radiusSelect) {
+                let radiusOptions =
+                    Array.isArray(config.searchRadiusOptions) &&
+                        config.searchRadiusOptions.length
+                        ? config.searchRadiusOptions
+                        : [25, 50, 100, 250];
+
                 const configuredRadius =
-                    String(
-                        Number(config.searchRadius) || 50
-                    );
+                    Number(config.searchRadius) || 50;
 
-                const matchingOption =
-                    Array.from(
-                        radiusSelect.options
-                    ).find(
-                        (option) =>
-                            option.value ===
-                            configuredRadius
-                    );
-
-                if (matchingOption) {
-                    radiusSelect.value =
-                        configuredRadius;
+                // Make sure the default radius is always
+                // available as an option.
+                if (!radiusOptions.includes(configuredRadius)) {
+                    radiusOptions = [
+                        ...radiusOptions,
+                        configuredRadius,
+                    ].sort((a, b) => a - b);
                 }
+
+                radiusSelect.innerHTML =
+                    radiusOptions
+                        .map(
+                            (radius) => `
+                    <option value="${radius}">
+                        ${radius} miles
+                    </option>
+                `
+                        )
+                        .join("");
+
+                radiusSelect.value =
+                    String(configuredRadius);
+
+                radiusSelect.disabled = false;
             }
 
             /*
@@ -1257,10 +1272,6 @@
             if (useLocationButton) {
                 useLocationButton.disabled =
                     false;
-            }
-
-            if (radiusSelect) {
-                radiusSelect.disabled = false;
             }
 
 
@@ -1434,15 +1445,11 @@
             ) {
                 activeSearchLocation = searchLocation;
                 activeSearchLabel = label;
-                const searchRadius =
-                    Number(
-                        radiusSelect?.value
-                    ) ||
-                    Number(
-                        config.searchRadius
-                    ) ||
-                    50;
 
+                const searchRadius =
+                    Number(radiusSelect?.value) ||
+                    Number(config.searchRadius) ||
+                    50;
 
                 /*
                  * Calculate distance to every location.
@@ -1482,9 +1489,8 @@
                                 a.distance - b.distance
                         );
 
-
                 /*
-                 * Filter by configured radius.
+                 * Filter by selected radius.
                  */
 
                 const matchingLocations =
@@ -1494,12 +1500,10 @@
                             searchRadius
                     );
 
-
                 console.log(
                     "MATCHING LOCATIONS:",
                     matchingLocations
                 );
-
 
                 /*
                  * Remove previous search marker.
@@ -1508,7 +1512,6 @@
                 if (searchMarker) {
                     searchMarker.remove();
                 }
-
 
                 /*
                  * Add marker for searched/current location.
@@ -1524,7 +1527,6 @@
                             searchLocation.latitude,
                         ])
                         .addTo(map);
-
 
                 /*
                  * Only show matching store markers.
@@ -1544,9 +1546,7 @@
                     }
                 );
 
-
                 clearActiveMarkers(markers);
-
 
                 /*
                  * Show Reset button.
@@ -1556,9 +1556,8 @@
                     resetButton.hidden = false;
                 }
 
-
                 /*
-                 * No results.
+                 * Handle no results.
                  */
 
                 if (!matchingLocations.length) {
@@ -1581,18 +1580,15 @@
                             searchLocation.longitude,
                             searchLocation.latitude,
                         ],
-
                         zoom: 9,
-
                         essential: true,
                     });
 
                     return;
                 }
 
-
                 /*
-                 * Render nearest stores first.
+                 * Render matching stores nearest first.
                  */
 
                 renderLocations(
@@ -1600,6 +1596,9 @@
                     matchingLocations
                 );
 
+                /*
+                 * Update search status.
+                 */
 
                 if (searchStatus) {
                     searchStatus.textContent =
@@ -1609,36 +1608,27 @@
                         } found within ${searchRadius} miles of ${label}.`;
                 }
 
-
                 /*
-                 * Fit map around searched location
+                 * Fit map around search point
                  * and matching stores.
                  */
 
                 const searchBounds =
                     new mapboxgl.LngLatBounds();
 
-
                 searchBounds.extend([
                     searchLocation.longitude,
                     searchLocation.latitude,
                 ]);
 
-
                 matchingLocations.forEach(
                     (location) => {
                         searchBounds.extend([
-                            Number(
-                                location.longitude
-                            ),
-
-                            Number(
-                                location.latitude
-                            ),
+                            Number(location.longitude),
+                            Number(location.latitude),
                         ]);
                     }
                 );
-
 
                 map.fitBounds(
                     searchBounds,
@@ -1732,300 +1722,12 @@
                                 searchLocation
                             );
 
-
-                            /*
-                             * Show Reset button.
-                             */
-
-                            if (
-                                resetButton
-                            ) {
-                                resetButton.hidden =
-                                    false;
-                            }
-
-
-                            /*
-                             * Configured search radius.
-                             */
-
-                            const searchRadius =
-                                Number(
-                                    config.searchRadius
-                                ) || 50;
-
-
-                            /*
-                             * Calculate distance from searched
-                             * coordinates to every store.
-                             */
-
-                            const locationsWithDistance =
-                                locations
-                                    .map(
-                                        (
-                                            location
-                                        ) => {
-                                            const latitude =
-                                                Number(
-                                                    location.latitude
-                                                );
-
-                                            const longitude =
-                                                Number(
-                                                    location.longitude
-                                                );
-
-
-                                            if (
-                                                Number.isNaN(
-                                                    latitude
-                                                ) ||
-                                                Number.isNaN(
-                                                    longitude
-                                                )
-                                            ) {
-                                                return null;
-                                            }
-
-
-                                            return {
-                                                ...location,
-
-                                                distance:
-                                                    calculateDistanceMiles(
-                                                        searchLocation.latitude,
-                                                        searchLocation.longitude,
-                                                        latitude,
-                                                        longitude
-                                                    ),
-                                            };
-                                        }
-                                    )
-                                    .filter(
-                                        Boolean
-                                    )
-                                    .sort(
-                                        (
-                                            a,
-                                            b
-                                        ) =>
-                                            a.distance -
-                                            b.distance
-                                    );
-
-
-                            /*
-                             * Filter by search radius.
-                             */
-
-                            const matchingLocations =
-                                locationsWithDistance.filter(
-                                    (
-                                        location
-                                    ) =>
-                                        location.distance <=
-                                        searchRadius
-                                );
-
-
-                            console.log(
-                                "MATCHING LOCATIONS:",
-                                matchingLocations
+                            showNearbyLocations(
+                                searchLocation,
+                                `"${query}"`
                             );
 
 
-                            /*
-                             * Remove previous search marker.
-                             */
-
-                            if (
-                                searchMarker
-                            ) {
-                                searchMarker.remove();
-                            }
-
-
-                            /*
-                             * Search-origin marker.
-                             */
-
-                            const searchMarkerElement =
-                                document.createElement(
-                                    "div"
-                                );
-
-                            searchMarkerElement.className =
-                                "store-locator__search-marker";
-
-                            searchMarkerElement.setAttribute(
-                                "aria-label",
-                                "Your searched location"
-                            );
-
-
-                            searchMarker =
-                                new mapboxgl.Marker(
-                                    {
-                                        element:
-                                            searchMarkerElement,
-
-                                        anchor:
-                                            "center",
-                                    }
-                                )
-                                    .setLngLat(
-                                        [
-                                            searchLocation.longitude,
-                                            searchLocation.latitude,
-                                        ]
-                                    )
-                                    .addTo(
-                                        map
-                                    );
-
-
-                            /*
-                             * Hide markers outside search radius.
-                             */
-
-                            markers.forEach(
-                                (
-                                    marker,
-                                    locationId
-                                ) => {
-                                    const isVisible =
-                                        matchingLocations.some(
-                                            (
-                                                location
-                                            ) =>
-                                                String(
-                                                    location.id
-                                                ) ===
-                                                String(
-                                                    locationId
-                                                )
-                                        );
-
-                                    marker.getElement().style.display =
-                                        isVisible
-                                            ? ""
-                                            : "none";
-                                }
-                            );
-
-
-                            /*
-                             * Clear prior selected marker.
-                             */
-
-                            clearActiveMarkers(
-                                markers
-                            );
-
-
-                            /*
-                             * No results.
-                             */
-
-                            if (
-                                !matchingLocations.length
-                            ) {
-                                renderLocations(
-                                    container,
-                                    [],
-                                    {
-                                        emptyMessage:
-                                            `No stores were found within ${searchRadius} miles.`,
-                                    }
-                                );
-
-                                if (
-                                    searchStatus
-                                ) {
-                                    searchStatus.textContent =
-                                        `No stores were found within ${searchRadius} miles.`;
-                                }
-
-                                map.flyTo({
-                                    center: [
-                                        searchLocation.longitude,
-                                        searchLocation.latitude,
-                                    ],
-
-                                    zoom: 9,
-
-                                    essential:
-                                        true,
-                                });
-
-                                return;
-                            }
-
-
-                            /*
-                             * Render nearest stores first.
-                             */
-
-                            renderLocations(
-                                container,
-                                matchingLocations
-                            );
-
-
-                            if (
-                                searchStatus
-                            ) {
-                                searchStatus.textContent =
-                                    `${matchingLocations.length} ${matchingLocations.length ===
-                                        1
-                                        ? "store"
-                                        : "stores"
-                                    } found within ${searchRadius} miles.`;
-                            }
-
-
-                            /*
-                             * Fit map around search point
-                             * and all matching stores.
-                             */
-
-                            const searchBounds =
-                                new mapboxgl.LngLatBounds();
-
-
-                            searchBounds.extend([
-                                searchLocation.longitude,
-                                searchLocation.latitude,
-                            ]);
-
-
-                            matchingLocations.forEach(
-                                (
-                                    location
-                                ) => {
-                                    searchBounds.extend(
-                                        [
-                                            Number(
-                                                location.longitude
-                                            ),
-
-                                            Number(
-                                                location.latitude
-                                            ),
-                                        ]
-                                    );
-                                }
-                            );
-
-
-                            map.fitBounds(
-                                searchBounds,
-                                {
-                                    padding: 70,
-                                    maxZoom: 12,
-                                }
-                            );
                         } catch (
                         error
                         ) {

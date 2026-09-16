@@ -37,7 +37,8 @@ model StoreSettings {
   defaultLatitude  Float?
   defaultLongitude Float?
   defaultZoom      Float    @default(8)
-  searchRadius     Int      @default(50)
+  searchRadius     Int?
+  searchRadiusOptions String? @default("25,50,100,250")
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 }

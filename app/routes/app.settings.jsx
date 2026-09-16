@@ -24,6 +24,7 @@ export async function loader({ request }) {
             defaultLongitude: settings?.defaultLongitude ?? -77.9447,
             defaultZoom: settings?.defaultZoom ?? 8,
             searchRadius: settings?.searchRadius ?? 50,
+            searchRadiusOptions: settings?.searchRadiusOptions || "25,50,100,250",
         },
     };
 }
@@ -39,6 +40,22 @@ export async function action({ request }) {
     const defaultLongitude = Number(formData.get("defaultLongitude"));
     const defaultZoom = Number(formData.get("defaultZoom"));
     const searchRadius = Number(formData.get("searchRadius"));
+    const rawSearchRadiusOptions =
+        String(
+            formData.get("searchRadiusOptions") || ""
+        );
+
+    const searchRadiusOptions =
+        rawSearchRadiusOptions
+            .split(",")
+            .map((value) => Number(value.trim()))
+            .filter(
+                (value) =>
+                    Number.isFinite(value) &&
+                    value > 0
+            )
+            .sort((a, b) => a - b)
+            .join(",");
 
     if (!mapboxToken) {
         return {
@@ -67,6 +84,9 @@ export async function action({ request }) {
             defaultLongitude,
             defaultZoom,
             searchRadius,
+            searchRadiusOptions:
+                searchRadiusOptions ||
+                "25,50,100,250",
         },
     });
 
