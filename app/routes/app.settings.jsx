@@ -25,6 +25,8 @@ export async function loader({ request }) {
             defaultZoom: settings?.defaultZoom ?? 8,
             searchRadius: settings?.searchRadius ?? 50,
             searchRadiusOptions: settings?.searchRadiusOptions || "25,50,100,250",
+            enableGeolocation:
+                settings?.enableGeolocation ?? true,
         },
     };
 }
@@ -35,6 +37,9 @@ export async function action({ request }) {
     const formData = await request.formData();
 
     const mapboxToken = String(formData.get("mapboxToken") || "").trim();
+
+    const enableGeolocation =
+        formData.has("enableGeolocation");
 
     const defaultLatitude = Number(formData.get("defaultLatitude"));
     const defaultLongitude = Number(formData.get("defaultLongitude"));
@@ -75,6 +80,7 @@ export async function action({ request }) {
             defaultLongitude,
             defaultZoom,
             searchRadius,
+            enableGeolocation
         },
 
         create: {
@@ -87,6 +93,7 @@ export async function action({ request }) {
             searchRadiusOptions:
                 searchRadiusOptions ||
                 "25,50,100,250",
+            enableGeolocation,
         },
     });
 
@@ -142,12 +149,13 @@ export default function SettingsPage() {
                             defaultValue={String(settings.defaultZoom)}
                         />
 
-                        <s-text-field
-                            label="Default search radius (miles)"
-                            name="searchRadius"
-                            type="number"
-                            defaultValue={String(settings.searchRadius)}
-                        />
+                        <s-checkbox
+                            label="Enable Use My Location"
+                            name="enableGeolocation"
+                            defaultChecked={settings.enableGeolocation}
+                        >
+                            Allow customers to search for stores using their current location.
+                        </s-checkbox>
 
                         {actionData?.error && (
                             <s-banner tone="critical">

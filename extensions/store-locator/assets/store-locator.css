@@ -205,6 +205,7 @@
 }
 
 .store-locator__reset-button {
+    width: 100%;
     flex: 0 0 auto;
     min-height: 44px;
     margin: 0;

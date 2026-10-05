@@ -1270,8 +1270,12 @@
             }
 
             if (useLocationButton) {
-                useLocationButton.disabled =
-                    false;
+                if (config.enableGeolocation === false) {
+                    useLocationButton.hidden = true;
+                } else {
+                    useLocationButton.hidden = false;
+                    useLocationButton.disabled = false;
+                }
             }
 
 

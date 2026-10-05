@@ -48,6 +48,9 @@ export async function loader({ request }) {
             searchRadius:
                 settings?.searchRadius ?? 50,
 
+            enableGeolocation:
+                settings?.enableGeolocation ?? true,
+
             searchRadiusOptions:
                 (
                     settings?.searchRadiusOptions ||
